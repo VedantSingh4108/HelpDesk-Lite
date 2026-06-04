@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=IBM+Plex+Sans:wght@500&display=swap');
+@import "tailwindcss";
 
 :root {
   /* Colors */
@@ -41,11 +42,7 @@
   --space-xl: 32px;
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+
 
 body {
   font-family: var(--font-body);
@@ -185,3 +182,74 @@ body {
 .text-xl { font-size: 20px; font-weight: 600; }
 .text-lg { font-size: 18px; font-weight: 500; }
 .text-muted { color: var(--text-muted); }
+
+/* Ping-Pong Background Animations (Center Burst) */
+@keyframes bounce-x {
+  0%   { transform: translateX(0); }
+  25%  { transform: translateX(calc(50vw - 40px)); }
+  75%  { transform: translateX(calc(-50vw + 40px)); }
+  100% { transform: translateX(0); }
+}
+@keyframes bounce-x-rev {
+  0%   { transform: translateX(0); }
+  25%  { transform: translateX(calc(-50vw + 40px)); }
+  75%  { transform: translateX(calc(50vw - 40px)); }
+  100% { transform: translateX(0); }
+}
+
+@keyframes bounce-y {
+  0%   { transform: translateY(0); }
+  25%  { transform: translateY(calc(50vh - 40px)); }
+  75%  { transform: translateY(calc(-50vh + 40px)); }
+  100% { transform: translateY(0); }
+}
+@keyframes bounce-y-rev {
+  0%   { transform: translateY(0); }
+  25%  { transform: translateY(calc(-50vh + 40px)); }
+  75%  { transform: translateY(calc(50vh - 40px)); }
+  100% { transform: translateY(0); }
+}
+
+.animate-ping-pong-x-1 { animation: bounce-x 20.8s linear infinite; animation-delay: 1.5s; }
+.animate-ping-pong-y-1 { animation: bounce-y 14.8s linear infinite; animation-delay: 1.5s; }
+
+.animate-ping-pong-x-2 { animation: bounce-x-rev 27.2s linear infinite; animation-delay: 1.5s; }
+.animate-ping-pong-y-2 { animation: bounce-y 18.0s linear infinite; animation-delay: 1.5s; }
+
+.animate-ping-pong-x-3 { animation: bounce-x 19.2s linear infinite; animation-delay: 1.5s; }
+.animate-ping-pong-y-3 { animation: bounce-y-rev 23.6s linear infinite; animation-delay: 1.5s; }
+
+.animate-ping-pong-x-4 { animation: bounce-x-rev 23.2s linear infinite; animation-delay: 1.5s; }
+.animate-ping-pong-y-4 { animation: bounce-y-rev 16.8s linear infinite; animation-delay: 1.5s; }
+
+.animate-ping-pong-x-5 { animation: bounce-x 16.4s linear infinite; animation-delay: 1.5s; }
+.animate-ping-pong-y-5 { animation: bounce-y 26.0s linear infinite; animation-delay: 1.5s; }
+
+/* Initial Splash Animations (Rays) */
+@keyframes ray-splash {
+  0% {
+    transform: translate(-50%, -50%) scale(0) rotate(0deg);
+    opacity: 1;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(30) rotate(180deg);
+    opacity: 0;
+  }
+}
+
+.animate-splash {
+  animation: ray-splash 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+@keyframes fade-in-delayed {
+  0%, 80% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.animate-fade-in-delayed {
+  opacity: 0;
+  animation: fade-in-delayed 1.5s forwards;
+}

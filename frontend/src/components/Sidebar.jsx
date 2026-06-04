@@ -13,8 +13,7 @@ export default function Sidebar({ role }) {
   ];
 
   const agentLinks = [
-    { name: 'Dashboard', path: '/agent/dashboard', icon: Inbox },
-    { name: 'My Assigned', path: '/agent/my-assigned', icon: CheckSquare },
+    { name: 'Dashboard', path: '/agent/dashboard', icon: Inbox, matchPaths: ['/agent/dashboard', '/agent/my-assigned'] },
     { name: 'Filters', action: 'toggle-filters', icon: Filter },
   ];
 
@@ -63,9 +62,9 @@ export default function Sidebar({ role }) {
                   alignItems: 'center',
                   gap: 'var(--space-sm)',
                   padding: '12px var(--space-lg)',
-                  color: isActive ? 'white' : 'var(--secondary-bg)',
-                  backgroundColor: isActive ? 'rgba(255,255,255,0.1)' : 'transparent',
-                  borderLeft: isActive ? '4px solid var(--info)' : '4px solid transparent',
+                  color: 'var(--secondary-bg)',
+                  backgroundColor: 'transparent',
+                  borderLeft: '4px solid transparent',
                   borderTop: 'none', borderRight: 'none', borderBottom: 'none',
                   cursor: 'pointer',
                   width: '100%',
@@ -79,7 +78,7 @@ export default function Sidebar({ role }) {
             );
           }
 
-          const isActive = location.pathname === link.path;
+          const isActive = link.matchPaths ? link.matchPaths.some(p => location.pathname.includes(p)) : location.pathname === link.path;
           return (
             <Link 
               key={link.name} 

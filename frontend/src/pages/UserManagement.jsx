@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import Modal from '../components/Modal';
 
 export default function UserManagement() {
@@ -41,7 +41,7 @@ export default function UserManagement() {
   };
 
   return (
-    <div className="page-content container">
+    <div className="page-content w-full px-8">
       <div className="flex justify-between items-center mb-lg">
         <h2 className="text-2xl">User Management</h2>
         <button className="btn btn-primary" onClick={() => handleOpenModal()}>Add New User</button>

@@ -1,27 +1,27 @@
-import { useState } from 'react';
-import { useLocation, useSearchParams } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { allDummyTickets } from '../data/dummyData';
 
 export default function SupportAgentDashboard() {
   const [selectedTicket, setSelectedTicket] = useState(null);
-  const location = useLocation();
   const [searchParams] = useSearchParams();
   const showFilters = searchParams.get('showFilters') === 'true';
 
   // Dummy agent ID
   const currentAgentId = 'A-001';
 
-  // Track if the view is set to 'All Tickets' or 'My Assigned' based on nested route
-  const filterType = location.pathname === '/agent/my-assigned' ? 'assigned' : 'all';
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  // Additional filter state for the popover/row
+  // URL is the single source of truth for the active tab to sync with Sidebar
+  const activeFilter = location.pathname.includes('my-assigned') ? 'assigned' : 'all';
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [priorityFilter, setPriorityFilter] = useState('All');
 
   // Apply filters
   let displayedTickets = allDummyTickets;
   
-  if (filterType === 'assigned') {
+  if (activeFilter === 'assigned') {
     displayedTickets = displayedTickets.filter(t => t.assigneeId === currentAgentId);
   }
 
@@ -38,9 +38,28 @@ export default function SupportAgentDashboard() {
       {/* Main Ticket List */}
       <div className="page-content" style={{ flex: 1 }}>
         <div className="flex justify-between items-center mb-md">
-          <h2 className="text-xl">
-            {filterType === 'assigned' ? 'My Assigned Tickets' : 'All Tickets'}
-          </h2>
+          <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
+            <button 
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
+                activeFilter === 'all' 
+                  ? 'bg-white text-slate-900 shadow-sm' 
+                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+              }`}
+              onClick={() => navigate('/agent/dashboard' + (showFilters ? '?showFilters=true' : ''))}
+            >
+              {'All Tickets'}
+            </button>
+            <button 
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
+                activeFilter === 'assigned' 
+                  ? 'bg-white text-slate-900 shadow-sm' 
+                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+              }`}
+              onClick={() => navigate('/agent/my-assigned' + (showFilters ? '?showFilters=true' : ''))}
+            >
+              {'My Assigned'}
+            </button>
+          </div>
           <div className="flex gap-sm">
             <select className="input-field" style={{ width: 'auto' }}>
               <option>All Statuses</option>
