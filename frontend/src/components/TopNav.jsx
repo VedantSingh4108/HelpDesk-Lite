@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import NotificationDropdown from './NotificationDropdown';
+import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { User, LogOut } from 'lucide-react';
 
 export default function TopNav({ role = 'user' }) {
@@ -22,12 +21,12 @@ export default function TopNav({ role = 'user' }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // 2. Merged the two handleLogout functions into one working function
+  // 2. Safely log the user out
   const handleLogout = () => {
-    setIsProfileOpen(false); // Close the menu visually
-    localStorage.removeItem('helpdeskToken'); // Clear auth token
-    localStorage.removeItem('helpdeskUser'); // Clear user data
-    navigate('/'); // Send them back to the login screen safely
+    setIsProfileOpen(false);
+    localStorage.removeItem('helpdeskToken');
+    localStorage.removeItem('helpdeskUser');
+    navigate('/');
   };
 
   return (
@@ -39,6 +38,30 @@ export default function TopNav({ role = 'user' }) {
       alignItems: 'center',
       padding: '0 var(--space-lg)'
     }}>
+
+      {/* Dynamic CSS Injection to handle NavLink active states! */}
+      <style>{`
+        .top-nav-link {
+          text-decoration: none;
+          color: var(--text-muted);
+          font-weight: 500;
+          padding: 8px 12px;
+          border-radius: 6px;
+          transition: all 0.2s ease;
+        }
+        
+        .top-nav-link:hover {
+          color: var(--text-main);
+          background-color: var(--background);
+        }
+
+        /* This is the magic class React Router attaches automatically! */
+        .top-nav-link.active {
+          color: var(--primary);
+          background-color: #eff6ff; /* A very light blue tint */
+        }
+      `}</style>
+
       <div className="flex items-center justify-between w-full">
         <div className="flex items-center gap-lg">
           <Link to={role === 'admin' ? '/admin' : role === 'agent' ? '/agent' : '/submit'} style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -46,16 +69,16 @@ export default function TopNav({ role = 'user' }) {
           </Link>
 
           {role === 'user' && (
-            <nav className="flex gap-md">
-              <Link to="/submit" style={{ textDecoration: 'none', color: 'var(--text-muted)' }}>Submit Ticket</Link>
-              <Link to="/my-tickets" style={{ textDecoration: 'none', color: 'var(--text-muted)' }}>My Tickets</Link>
-              <Link to="/support" style={{ textDecoration: 'none', color: 'var(--text-muted)' }}>Support</Link>
+            <nav className="flex gap-sm">
+              <NavLink to="/submit" className="top-nav-link">Submit Ticket</NavLink>
+              <NavLink to="/my-tickets" className="top-nav-link">My Tickets</NavLink>
+              <NavLink to="/support" className="top-nav-link">Support</NavLink>
             </nav>
           )}
         </div>
 
         <div className="flex items-center gap-md">
-          <NotificationDropdown />
+          {/* NotificationDropdown component REMOVED entirely */}
 
           <div ref={profileRef} style={{ position: 'relative' }}>
             <div
@@ -89,22 +112,11 @@ export default function TopNav({ role = 'user' }) {
                 }}
               >
                 <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 'var(--space-sm)' }}>
-                  {/* 3. Ghost code removed! Dynamic user data added here */}
                   <p style={{ fontWeight: 500 }}>{loggedInUser.name || 'Support Agent'}</p>
                   <p className="text-muted" style={{ fontSize: '14px' }}>{loggedInUser.email || 'agent@helpdesk.com'}</p>
                 </div>
 
                 <div className="flex-col gap-sm">
-                  {/* Settings link temporarily hidden since it is not built yet
-                  <Link 
-                    to="#" 
-                    style={{ textDecoration: 'none', color: 'var(--text-main)', fontSize: '14px', padding: '4px 0' }}
-                    onClick={() => setIsProfileOpen(false)}
-                  >
-                    Settings
-                  </Link> 
-                  */}
-
                   <button
                     onClick={handleLogout}
                     style={{

@@ -46,7 +46,9 @@ export default function Chatbot() {
     };
 
     return (
-        <>
+        /* --- CHANGED THIS FRAGMENT TO A DIV WITH THE TARGET ID --- */
+        <div id="helpdesk-chatbot">
+
             {/* Floating Action Button */}
             {!isChatOpen && (
                 <button
@@ -140,6 +142,6 @@ export default function Chatbot() {
                     </div>
                 </div>
             )}
-        </>
+        </div>
     );
 }

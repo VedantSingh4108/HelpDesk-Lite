@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Filter, Edit2, X, CheckCircle } from 'lucide-react';
+import { Edit2, X, CheckCircle } from 'lucide-react'; // Removed Filter
 import axios from 'axios';
 
 export default function MyTickets() {
@@ -12,7 +12,7 @@ export default function MyTickets() {
   const [editDescription, setEditDescription] = useState('');
   const [updateMsg, setUpdateMsg] = useState(null);
 
-  // --- Chat/Comment States (NEW) ---
+  // --- Chat/Comment States ---
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [loadingComments, setLoadingComments] = useState(false);
@@ -48,7 +48,7 @@ export default function MyTickets() {
     fetchTickets();
   }, []);
 
-  // --- Fetch Chat Comments (NEW) ---
+  // --- Fetch Chat Comments ---
   const fetchComments = async (ticketId) => {
     if (!ticketId) return;
     setLoadingComments(true);
@@ -72,7 +72,7 @@ export default function MyTickets() {
     }
   }, [selectedTicket?._id]);
 
-  // --- Submit New Chat Message (NEW) ---
+  // --- Submit New Chat Message ---
   const handleAddComment = async (e) => {
     e.preventDefault();
     if (!newComment.trim()) return;
@@ -171,12 +171,9 @@ export default function MyTickets() {
   return (
     <div className="page-content container" style={{ position: 'relative' }}>
 
-      {/* HEADER */}
+      {/* HEADER: Filter Button Removed */}
       <div className="flex justify-between items-center mb-lg">
         <h2 className="text-2xl">My Tickets</h2>
-        <button className="btn btn-secondary">
-          <Filter size={16} /> Filter
-        </button>
       </div>
 
       {/* --- SECTION 1: ACTIVE TICKETS --- */}
@@ -300,7 +297,7 @@ export default function MyTickets() {
               <div style={{ fontSize: '14px', color: 'var(--text-main)', fontWeight: '500' }}>{selectedTicket.title}</div>
             </div>
 
-            {/* --- NEW: Dynamic Live Support Chat Feed --- */}
+            {/* --- Dynamic Live Support Chat Feed --- */}
             <div style={{ marginBottom: 'var(--space-lg)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label className="label">Live Helpdesk Messages</label>
 
@@ -321,7 +318,6 @@ export default function MyTickets() {
                   <p className="text-muted text-xs" style={{ textAlign: 'center', padding: '8px' }}>No messages exchanged yet.</p>
                 ) : (
                   comments.map(c => {
-                    // Flip the alignment: End-User goes RIGHT, Staff/Admin goes LEFT
                     const isMe = c.user?.role === 'end-user';
                     return (
                       <div

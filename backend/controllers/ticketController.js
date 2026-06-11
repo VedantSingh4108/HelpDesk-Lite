@@ -5,7 +5,7 @@ const { GoogleGenAI, Type } = require('@google/genai');
 const Category = require('../models/Category');
 // Initialize the AI with your existing environment variable
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
+const Comment = require('../models/Comment');
 // @desc    Create a new ticket with AI Categorization
 // @route   POST /api/tickets
 const createTicket = async (req, res) => {
@@ -327,12 +327,67 @@ const getAdminAnalytics = async (req, res) => {
         res.status(500).json({ message: 'Failed to fetch analytics data' });
     }
 };
+// @desc    Generate AI suggested reply for agents
+// @route   GET /api/tickets/:id/suggest-reply
+// @access  Private (Agents/Admins)
+const suggestReply = async (req, res) => {
+    try {
+        // 1. Fetch the ticket and all related comments
+        const ticket = await Ticket.findById(req.params.id).populate('user', 'name');
+        const comments = await Comment.find({ ticket: req.params.id }).populate('user', 'role name');
 
+        if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
+
+        // 2. Format the conversation history for the AI
+        let conversationHistory = `Ticket Title: ${ticket.title}\nDescription: ${ticket.description}\n\n`;
+
+        if (comments.length === 0) {
+            conversationHistory += "(No comments yet. This is a brand new ticket.)\n";
+        } else {
+            comments.forEach(comment => {
+                const speaker = comment.user.role === 'end-user' ? 'Customer' : 'Support Agent';
+                conversationHistory += `${speaker} (${comment.user.name}): ${comment.text}\n`;
+            });
+        }
+
+        // 3. The Prompt Engineering
+        // 3. The Prompt Engineering
+        const prompt = `
+            You are a professional, empathetic, and highly skilled IT support agent. 
+            Read the following ticket description and conversation history, and draft a helpful reply to the customer.
+            Keep it concise, professional, and directly address their last message or the main issue.
+            Do not include placeholders like "[Your Name]". Just write the raw message body that an agent can immediately send.
+            
+            Conversation History:
+            ${conversationHistory}
+        `;
+
+        // 4. Initialize the new SDK correctly (just like your categorization function)
+        const { GoogleGenAI } = require('@google/genai');
+        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+        // 5. Call the model
+        const response = await ai.models.generateContent({
+            model: 'gemini-flash-lite-latest', // You can use flash or pro here
+            contents: prompt,
+        });
+
+        // 6. Extract the text response
+        const suggestedText = response.text;
+
+        // 7. Send the draft back to the frontend
+        res.json({ suggestion: suggestedText });
+    } catch (error) {
+        console.error("AI Suggestion Error:", error);
+        res.status(500).json({ message: 'Failed to generate AI suggestion' });
+    }
+};
 // Don't forget to export it at the bottom!
 module.exports = {
     createTicket, getTickets, updateTicket,
     getAllTickets,
     claimTicket,
     updateTicketByAgent,
-    getAdminAnalytics
+    getAdminAnalytics,
+    suggestReply
 };

@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const {
     createTicket, getTickets, updateTicket,
-    claimTicket, updateTicketByAgent, getAdminAnalytics
+    claimTicket, updateTicketByAgent, getAdminAnalytics, suggestReply
 } = require('../controllers/ticketController');
 const { protect } = require('../middleware/authMiddleware');
 
@@ -22,5 +22,6 @@ router.route('/:id/claim')
 
 router.route('/:id/status')
     .put(protect, updateTicketByAgent);
-
+router.route('/:id/suggest-reply')
+    .get(protect, suggestReply);
 module.exports = router;

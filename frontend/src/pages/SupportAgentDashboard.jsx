@@ -12,10 +12,11 @@ export default function SupportAgentDashboard() {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // --- Chat/Comment States (NEW) ---
+  // --- Chat/Comment States ---
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [loadingComments, setLoadingComments] = useState(false);
+  const [isSuggesting, setIsSuggesting] = useState(false); // NEW: AI Loading State
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -68,7 +69,7 @@ export default function SupportAgentDashboard() {
     setSelectedTicket(null);
   }, [activeFilter]);
 
-  // --- Fetch Chat Comments (NEW) ---
+  // --- Fetch Chat Comments ---
   const fetchComments = async (ticketId) => {
     if (!ticketId) return;
     setLoadingComments(true);
@@ -90,7 +91,25 @@ export default function SupportAgentDashboard() {
     }
   }, [selectedTicket?._id]);
 
-  // --- Submit New Chat Message (NEW) ---
+  // --- NEW: Fetch AI Suggestion ---
+  const handleSuggestReply = async () => {
+    if (!selectedTicket) return;
+    setIsSuggesting(true);
+    try {
+      const config = { headers: { Authorization: `Bearer ${loggedInUser.token}` } };
+      const { data } = await axios.get(`http://localhost:5000/api/tickets/${selectedTicket._id}/suggest-reply`, config);
+
+      // Auto-insert the AI's draft directly into the typing box!
+      setNewComment(data.suggestion);
+    } catch (error) {
+      console.error("Error fetching AI suggestion:", error);
+      alert("AI could not generate a response right now.");
+    } finally {
+      setIsSuggesting(false);
+    }
+  };
+
+  // --- Submit New Chat Message ---
   const handleAddComment = async (e) => {
     e.preventDefault();
     if (!newComment.trim()) return;
@@ -192,6 +211,17 @@ export default function SupportAgentDashboard() {
 
   return (
     <div className="flex h-full w-full" style={{ position: 'relative' }}>
+
+      {/* Dynamic CSS Injection to hide the global chatbot when this panel is open */}
+      {selectedTicket && (
+        <style>{`
+          /* This explicitly targets the ID wrapper in Chatbot.jsx */
+          #helpdesk-chatbot {
+            display: none !important;
+          }
+        `}</style>
+      )}
+
       {/* Main Ticket List */}
       <div className="page-content" style={{ flex: 1 }}>
         <div className="flex justify-between items-center mb-md">
@@ -214,7 +244,6 @@ export default function SupportAgentDashboard() {
             >
               My Assigned
             </button>
-            {/* --- NEW COMPLETED TAB --- */}
             <button
               className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${activeFilter === 'completed'
                 ? 'bg-white text-slate-900 shadow-sm'
@@ -306,17 +335,22 @@ export default function SupportAgentDashboard() {
             width: '400px',
             borderLeft: '1px solid var(--border)',
             backgroundColor: 'var(--surface)',
-            padding: 'var(--space-lg)',
             boxShadow: '-4px 0 15px rgba(0,0,0,0.05)',
-            overflowY: 'auto'
+            position: 'relative',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden'
           }}
         >
-          <div className="flex justify-between items-center mb-md">
-            <h3 className="text-lg">Ticket Details</h3>
+          {/* HEADER: Pinned to the top! */}
+          <div className="flex justify-between items-center" style={{ padding: 'var(--space-lg)', borderBottom: '1px solid var(--border)', zIndex: 10 }}>
+            <h3 className="text-lg" style={{ margin: 0 }}>Ticket Details</h3>
             <button className="btn btn-secondary" style={{ padding: '4px 8px' }} onClick={() => setSelectedTicket(null)}>Close</button>
           </div>
 
-          <div className="flex-col gap-md">
+          {/* BODY: This area will now scroll independently beneath the header */}
+          <div className="flex-col gap-md" style={{ padding: 'var(--space-lg)', overflowY: 'auto', flex: 1 }}>
             <div>
               <p className="label">Ticket ID</p>
               <p className="text-muted text-sm">{selectedTicket._id || selectedTicket.id}</p>
@@ -392,13 +426,12 @@ export default function SupportAgentDashboard() {
               </select>
             </div>
 
-            {/* --- REPLACED: Live Ticket Conversation Box --- */}
             <div className="mt-md" style={{ borderTop: '1px solid var(--border)', paddingTop: 'var(--space-md)', display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
               <p className="label">Ticket Conversation</p>
 
               {/* Message History Feed */}
               <div style={{
-                maxHeight: '250px',
+                maxHeight: '400px',
                 overflowY: 'auto',
                 display: 'flex',
                 flexDirection: 'column',
@@ -414,7 +447,6 @@ export default function SupportAgentDashboard() {
                   <p className="text-muted text-xs" style={{ textAlign: 'center', padding: '12px' }}>No messages sent yet.</p>
                 ) : (
                   comments.map(c => {
-                    // Check if the comment author is a staff member or the user
                     const isStaff = c.user?.role === 'admin' || c.user?.role === 'support-agent';
                     return (
                       <div
@@ -443,10 +475,26 @@ export default function SupportAgentDashboard() {
 
               {/* Chat Input Bar */}
               <form onSubmit={handleAddComment} className="flex gap-xs" style={{ marginTop: '4px' }}>
+                <button
+                  type="button"
+                  onClick={handleSuggestReply}
+                  disabled={isSuggesting}
+                  className="btn btn-secondary"
+                  style={{
+                    padding: '6px 10px',
+                    fontSize: '14px',
+                    backgroundColor: '#f8fafc',
+                    borderColor: '#cbd5e1',
+                    cursor: isSuggesting ? 'wait' : 'pointer'
+                  }}
+                  title="Generate AI Draft"
+                >
+                  {isSuggesting ? '⏳' : '✨'}
+                </button>
                 <input
                   type="text"
                   className="input-field"
-                  placeholder="Type a message to the user..."
+                  placeholder="Type a message..."
                   value={newComment}
                   onChange={e => setNewComment(e.target.value)}
                   style={{ flex: 1, padding: '6px 12px', fontSize: '13px' }}
