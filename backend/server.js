@@ -7,6 +7,7 @@ const connectDB = require('./config/db');
 const userRoutes = require('./routes/userRoutes');
 const ticketRoutes = require('./routes/ticketRoutes');
 const aiRoutes = require('./routes/aiRoutes');
+
 const cors = require('cors');
 
 connectDB();
@@ -28,7 +29,9 @@ app.use('/api/users', userRoutes);
 app.use('/api/tickets', ticketRoutes);
 // Mount the AI routes
 app.use('/api/ai', aiRoutes);
-
+app.use('/api/categories', require('./routes/categoryRoutes'));
+// Add this right below app.use('/api/tickets', ...);
+app.use('/api/comments', require('./routes/commentRoutes'));
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {

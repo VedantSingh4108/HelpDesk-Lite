@@ -8,6 +8,9 @@ export default function TopNav({ role = 'user' }) {
   const profileRef = useRef(null);
   const navigate = useNavigate();
 
+  // 1. Safely grab the logged-in user from Local Storage
+  const loggedInUser = JSON.parse(localStorage.getItem('helpdeskUser')) || {};
+
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
@@ -19,9 +22,12 @@ export default function TopNav({ role = 'user' }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // 2. Merged the two handleLogout functions into one working function
   const handleLogout = () => {
-    setIsProfileOpen(false);
-    navigate('/');
+    setIsProfileOpen(false); // Close the menu visually
+    localStorage.removeItem('helpdeskToken'); // Clear auth token
+    localStorage.removeItem('helpdeskUser'); // Clear user data
+    navigate('/'); // Send them back to the login screen safely
   };
 
   return (
@@ -38,7 +44,7 @@ export default function TopNav({ role = 'user' }) {
           <Link to={role === 'admin' ? '/admin' : role === 'agent' ? '/agent' : '/submit'} style={{ textDecoration: 'none', color: 'inherit' }}>
             <h1 className="text-xl">HelpdeskPlatform</h1>
           </Link>
-          
+
           {role === 'user' && (
             <nav className="flex gap-md">
               <Link to="/submit" style={{ textDecoration: 'none', color: 'var(--text-muted)' }}>Submit Ticket</Link>
@@ -47,13 +53,13 @@ export default function TopNav({ role = 'user' }) {
             </nav>
           )}
         </div>
-        
+
         <div className="flex items-center gap-md">
           <NotificationDropdown />
-          
+
           <div ref={profileRef} style={{ position: 'relative' }}>
-            <div 
-              className="flex items-center gap-sm" 
+            <div
+              className="flex items-center gap-sm"
               style={{ cursor: 'pointer' }}
               onClick={() => setIsProfileOpen(!isProfileOpen)}
             >
@@ -67,7 +73,7 @@ export default function TopNav({ role = 'user' }) {
             </div>
 
             {isProfileOpen && (
-              <div 
+              <div
                 className="card"
                 style={{
                   position: 'absolute',
@@ -83,23 +89,27 @@ export default function TopNav({ role = 'user' }) {
                 }}
               >
                 <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 'var(--space-sm)' }}>
-                  <p style={{ fontWeight: 500 }}>Jane Doe</p>
-                  <p className="text-muted" style={{ fontSize: '14px' }}>jane.doe@company.com</p>
+                  {/* 3. Ghost code removed! Dynamic user data added here */}
+                  <p style={{ fontWeight: 500 }}>{loggedInUser.name || 'Support Agent'}</p>
+                  <p className="text-muted" style={{ fontSize: '14px' }}>{loggedInUser.email || 'agent@helpdesk.com'}</p>
                 </div>
-                
+
                 <div className="flex-col gap-sm">
+                  {/* Settings link temporarily hidden since it is not built yet
                   <Link 
                     to="#" 
                     style={{ textDecoration: 'none', color: 'var(--text-main)', fontSize: '14px', padding: '4px 0' }}
                     onClick={() => setIsProfileOpen(false)}
                   >
                     Settings
-                  </Link>
-                  <button 
+                  </Link> 
+                  */}
+
+                  <button
                     onClick={handleLogout}
-                    style={{ 
-                      background: 'none', border: 'none', color: 'var(--error)', 
-                      fontSize: '14px', padding: '4px 0', display: 'flex', 
+                    style={{
+                      background: 'none', border: 'none', color: 'var(--error)',
+                      fontSize: '14px', padding: '4px 0', display: 'flex',
                       alignItems: 'center', gap: '8px', cursor: 'pointer', textAlign: 'left',
                       fontFamily: 'inherit'
                     }}

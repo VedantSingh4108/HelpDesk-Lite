@@ -8,49 +8,53 @@ export default function SupportAgentDashboard() {
   const showFilters = searchParams.get('showFilters') === 'true';
 
   // --- Live Data States ---
+  const loggedInUser = JSON.parse(localStorage.getItem('helpdeskUser')) || {};
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Pull live agent info from local storage (Make sure this matches your auth implementation)
-  const loggedInUser = JSON.parse(localStorage.getItem('helpdeskUser')) || { _id: 'dummy_id', name: 'Agent', token: '' };
+  // --- Chat/Comment States (NEW) ---
+  const [comments, setComments] = useState([]);
+  const [newComment, setNewComment] = useState('');
+  const [loadingComments, setLoadingComments] = useState(false);
 
   const location = useLocation();
   const navigate = useNavigate();
 
   // URL is the single source of truth for the active tab to sync with Sidebar
-  const activeFilter = location.pathname.includes('my-assigned') ? 'assigned' : 'all';
+  const activeFilter = location.pathname.includes('my-assigned')
+    ? 'assigned'
+    : location.pathname.includes('completed')
+      ? 'completed'
+      : 'all';
 
   const [statusFilter, setStatusFilter] = useState('All Statuses');
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [priorityFilter, setPriorityFilter] = useState('All');
+
   // --- STATE MACHINE LOGIC ---
-  // This dictates exactly which statuses are allowed next
   const allowedTransitions = {
-    'open': ['open', 'in-progress', 'resolved', 'closed'],
+    'open': ['open', 'in-progress', 'resolved'],
     'in-progress': ['in-progress', 'resolved'],
     'resolved': ['resolved', 'closed'],
     'closed': ['closed']
   };
-  // Helper to make lowercase database statuses look pretty in the UI
+
   const formatStatusDisplay = (status) => {
     if (!status) return 'Unknown';
     if (status === 'in-progress') return 'In Progress';
     return status.charAt(0).toUpperCase() + status.slice(1);
   };
+
   // --- Fetch Live Tickets from Backend ---
   const fetchTickets = async () => {
     setLoading(true);
     try {
-      console.log("MY CURRENT USER DATA IS:", loggedInUser);
       const config = { headers: { Authorization: `Bearer ${loggedInUser.token}` } };
-      // Switch backend query based on the active URL filter
+
+      // We fetch all tickets or assigned tickets. The frontend will handle filtering out 'completed'
       const url = activeFilter === 'assigned' ? '/api/tickets?assignedTo=me' : '/api/tickets';
 
       const { data } = await axios.get(url, config);
-
-      // THIS WILL TELL US IF THE BACKEND IS ANGRY:
-      console.log("BACKEND RESPONSE:", data);
-
       setTickets(data);
     } catch (error) {
       console.error("Error fetching tickets:", error);
@@ -59,11 +63,53 @@ export default function SupportAgentDashboard() {
     }
   };
 
-  // Re-fetch whenever the URL tab changes
   useEffect(() => {
     fetchTickets();
-    setSelectedTicket(null); // Close panel when switching tabs
+    setSelectedTicket(null);
   }, [activeFilter]);
+
+  // --- Fetch Chat Comments (NEW) ---
+  const fetchComments = async (ticketId) => {
+    if (!ticketId) return;
+    setLoadingComments(true);
+    try {
+      const config = { headers: { Authorization: `Bearer ${loggedInUser.token}` } };
+      const { data } = await axios.get(`http://localhost:5000/api/comments/${ticketId}`, config);
+      setComments(data);
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+    } finally {
+      setLoadingComments(false);
+    }
+  };
+
+  // Trigger fetch whenever a new ticket is opened
+  useEffect(() => {
+    if (selectedTicket?._id) {
+      fetchComments(selectedTicket._id);
+    }
+  }, [selectedTicket?._id]);
+
+  // --- Submit New Chat Message (NEW) ---
+  const handleAddComment = async (e) => {
+    e.preventDefault();
+    if (!newComment.trim()) return;
+
+    try {
+      const config = { headers: { Authorization: `Bearer ${loggedInUser.token}` } };
+      const { data } = await axios.post(
+        `http://localhost:5000/api/comments/${selectedTicket._id}`,
+        { text: newComment },
+        config
+      );
+
+      // Append new message directly to state so it renders instantly
+      setComments(prev => [...prev, data]);
+      setNewComment('');
+    } catch (error) {
+      console.error("Error adding comment:", error);
+    }
+  };
 
   // --- Atomic Claim Logic ---
   const handleClaimTicket = async (ticketId) => {
@@ -71,8 +117,8 @@ export default function SupportAgentDashboard() {
       const config = { headers: { Authorization: `Bearer ${loggedInUser.token}` } };
       await axios.put(`/api/tickets/${ticketId}/claim`, {}, config);
 
-      fetchTickets(); // Refresh list
-      setSelectedTicket(null); // Close panel to reflect changes
+      fetchTickets();
+      setSelectedTicket(null);
     } catch (error) {
       if (error.response && error.response.status === 409) {
         alert("Whoops! Another agent just claimed this ticket. It is locked.");
@@ -83,48 +129,57 @@ export default function SupportAgentDashboard() {
       }
     }
   };
-  // NEW HELPER: Bulletproof normalizer for messy database strings
+
   const normalizeStatus = (rawStatus) => {
     if (!rawStatus) return 'open';
-    // Converts "In Progress" -> "in-progress", AND "OPEN" -> "open"
     return rawStatus.toLowerCase().replace(' ', '-');
   };
-  // --- Status Update Logic ---
+
   // --- Status Update Logic ---
   const handleStatusChange = async (ticketId, newStatus) => {
-    // 1. INSTANT UI UPDATE: Change the panel state immediately so it never snaps back
     setSelectedTicket(prev => ({ ...prev, status: newStatus }));
 
     try {
-      // 2. Send the update to the database in the background
       const config = { headers: { Authorization: `Bearer ${loggedInUser.token}` } };
       await axios.put(`/api/tickets/${ticketId}`, { status: newStatus }, config);
-
-      // 3. Refresh the main list so the background cards match the new status
       fetchTickets();
     } catch (error) {
-      // THIS WILL PRINT THE EXACT REASON THE BACKEND REJECTED IT
       console.error("Error updating status:", error.response?.data || error.message);
-
       alert(`Update failed: ${error.response?.data?.message || 'Check console'}`);
-      fetchTickets(); // Revert the UI since the save failed
+      fetchTickets();
     }
   };
 
   // --- Apply Frontend Filters ---
   let displayedTickets = tickets;
 
-  if (statusFilter !== 'All Statuses') {
-    displayedTickets = !Array.isArray(displayedTickets) ? [] : displayedTickets.filter(t => t.status === statusFilter);
-  }
-  if (categoryFilter !== 'All') {
-    displayedTickets = !Array.isArray(displayedTickets) ? [] : displayedTickets.filter(t => t.category === categoryFilter);
-  }
-  if (priorityFilter !== 'All') {
-    displayedTickets = !Array.isArray(displayedTickets) ? [] : displayedTickets.filter(t => t.priority === priorityFilter);
+  if (!Array.isArray(displayedTickets)) {
+    displayedTickets = [];
+  } else {
+    // 1. Split the tickets based on which Tab is active
+    if (activeFilter === 'all' || activeFilter === 'assigned') {
+      // ACTIVE TABS: Hide closed tickets
+      displayedTickets = displayedTickets.filter(t => normalizeStatus(t.status) !== 'closed');
+    } else if (activeFilter === 'completed') {
+      // COMPLETED TAB: Only show closed, sort by newest, grab top 10
+      displayedTickets = displayedTickets
+        .filter(t => normalizeStatus(t.status) === 'closed')
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .slice(0, 10);
+    }
+
+    // 2. Apply the Dropdown Filters
+    if (statusFilter !== 'All Statuses') {
+      displayedTickets = displayedTickets.filter(t => normalizeStatus(t.status) === normalizeStatus(statusFilter));
+    }
+    if (categoryFilter !== 'All') {
+      displayedTickets = displayedTickets.filter(t => t.category === categoryFilter);
+    }
+    if (priorityFilter !== 'All') {
+      displayedTickets = displayedTickets.filter(t => t.priority === priorityFilter);
+    }
   }
 
-  // Helper function to map statuses to your CSS classes
   const getStatusClass = (status) => {
     switch (status) {
       case 'open': return 'bg-blue-100 text-blue-800';
@@ -148,7 +203,7 @@ export default function SupportAgentDashboard() {
                 }`}
               onClick={() => navigate('/agent/dashboard' + (showFilters ? '?showFilters=true' : ''))}
             >
-              {'All Tickets'}
+              All Tickets
             </button>
             <button
               className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${activeFilter === 'assigned'
@@ -157,7 +212,17 @@ export default function SupportAgentDashboard() {
                 }`}
               onClick={() => navigate('/agent/my-assigned' + (showFilters ? '?showFilters=true' : ''))}
             >
-              {'My Assigned'}
+              My Assigned
+            </button>
+            {/* --- NEW COMPLETED TAB --- */}
+            <button
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${activeFilter === 'completed'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                }`}
+              onClick={() => navigate('/agent/completed' + (showFilters ? '?showFilters=true' : ''))}
+            >
+              Completed
             </button>
           </div>
           <div className="flex gap-sm">
@@ -203,7 +268,7 @@ export default function SupportAgentDashboard() {
           {loading ? (
             <p className="text-muted" style={{ padding: 'var(--space-md)' }}>Loading tickets...</p>
           ) : !Array.isArray(displayedTickets) || displayedTickets.length === 0 ? (
-            <p className="text-muted" style={{ padding: 'var(--space-md)' }}>No tickets found. Check console (F12) for backend errors.</p>
+            <p className="text-muted" style={{ padding: 'var(--space-md)' }}>No tickets found.</p>
           ) : (
             displayedTickets.map(ticket => (
               <div
@@ -223,7 +288,6 @@ export default function SupportAgentDashboard() {
                   <span style={{ fontWeight: 500 }}>{ticket.title || 'Untitled Ticket'}</span>
                 </div>
                 <div className="flex items-center gap-md">
-                  {/* Add .toLowerCase() right here so the colors always match! */}
                   <span className={`badge ${getStatusClass(ticket.status?.toLowerCase())}`} style={{ padding: '4px 8px', borderRadius: '12px', fontSize: '12px' }}>
                     {formatStatusDisplay(ticket.status)}
                   </span>
@@ -285,7 +349,6 @@ export default function SupportAgentDashboard() {
               <p className="label">Assignment</p>
 
               {!selectedTicket.assignedTo ? (
-                /* ONLY show the Assign button if the ticket is 'open' */
                 normalizeStatus(selectedTicket.status) === 'open' ? (
                   <button
                     className="btn btn-primary mt-xs w-full"
@@ -315,8 +378,6 @@ export default function SupportAgentDashboard() {
                 className="input-field mt-xs"
                 value={normalizeStatus(selectedTicket.status)}
                 onChange={(e) => handleStatusChange(selectedTicket._id, e.target.value)}
-                // THIS IS THE MAGIC LINE: 
-                // It locks the dropdown if nobody owns it, OR if the current logged-in user isn't the owner
                 disabled={
                   !selectedTicket.assignedTo ||
                   (selectedTicket.assignedTo._id || selectedTicket.assignedTo) !== loggedInUser._id ||
@@ -331,11 +392,71 @@ export default function SupportAgentDashboard() {
               </select>
             </div>
 
-            <div className="mt-md" style={{ borderTop: '1px solid var(--border)', paddingTop: 'var(--space-md)' }}>
-              <p className="label mb-xs">Internal Notes (Coming Soon)</p>
-              <textarea className="input-field" rows="4" placeholder="Add a note..." disabled></textarea>
-              <button className="btn btn-secondary mt-sm w-full" disabled>Save Note</button>
+            {/* --- REPLACED: Live Ticket Conversation Box --- */}
+            <div className="mt-md" style={{ borderTop: '1px solid var(--border)', paddingTop: 'var(--space-md)', display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
+              <p className="label">Ticket Conversation</p>
+
+              {/* Message History Feed */}
+              <div style={{
+                maxHeight: '250px',
+                overflowY: 'auto',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+                backgroundColor: 'var(--background)',
+                padding: '8px',
+                borderRadius: '6px',
+                border: '1px solid var(--border)'
+              }}>
+                {loadingComments ? (
+                  <p className="text-muted text-xs" style={{ textAlign: 'center' }}>Loading conversation...</p>
+                ) : comments.length === 0 ? (
+                  <p className="text-muted text-xs" style={{ textAlign: 'center', padding: '12px' }}>No messages sent yet.</p>
+                ) : (
+                  comments.map(c => {
+                    // Check if the comment author is a staff member or the user
+                    const isStaff = c.user?.role === 'admin' || c.user?.role === 'support-agent';
+                    return (
+                      <div
+                        key={c._id}
+                        style={{
+                          alignSelf: isStaff ? 'flex-end' : 'flex-start',
+                          maxWidth: '85%',
+                          backgroundColor: isStaff ? 'var(--primary)' : '#e2e8f0',
+                          color: isStaff ? '#ffffff' : '#0f172a',
+                          padding: '6px 12px',
+                          borderRadius: '12px',
+                          borderBottomRightRadius: isStaff ? '2px' : '12px',
+                          borderBottomLeftRadius: isStaff ? '12px' : '2px',
+                          fontSize: '13px'
+                        }}
+                      >
+                        <div style={{ fontSize: '10px', opacity: 0.8, fontWeight: 'bold', marginBottom: '2px' }}>
+                          {c.user?.name || 'Unknown'} ({isStaff ? 'Agent' : 'User'})
+                        </div>
+                        <div>{c.text}</div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Chat Input Bar */}
+              <form onSubmit={handleAddComment} className="flex gap-xs" style={{ marginTop: '4px' }}>
+                <input
+                  type="text"
+                  className="input-field"
+                  placeholder="Type a message to the user..."
+                  value={newComment}
+                  onChange={e => setNewComment(e.target.value)}
+                  style={{ flex: 1, padding: '6px 12px', fontSize: '13px' }}
+                />
+                <button type="submit" className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '13px' }}>
+                  Send
+                </button>
+              </form>
             </div>
+
           </div>
         </div>
       )}

@@ -19,6 +19,12 @@ const getChatbotResponse = async (req, res) => {
       If the answer is not here, politely tell them to submit a support ticket.
 
       KNOWLEDGE BASE:
+      - Tickets usually take 3-4 working days to get resolved.
+      - There is a model behind the scenes that categories tickets based on the input you give and flag it as how fast the query needs to be resolved. 
+      - If a ticket is flagged as urgent or high priority, it will be resolved faster.
+      - Once a ticket is submitted, it is assigned a ticket ID which is unique to each ticket. You can use this ticket ID to refer to your ticket in further communication.
+      - A ticket can have multiple comments and updates.
+      - you can also talk with the agent assigned to your ticket through edit ticket option in my tickets and there you can chat with your agent.
       - How to Submit a Ticket / Raise an Issue: To report a problem or request help, click on the "Submit a Request" link in the sidebar (or navigate to /submit). Fill out the title, select a category, write a detailed description, and click "Submit Ticket".
       - Checking Ticket Status: You can view updates on your existing issues by clicking "My Tickets" in the sidebar navigation.
       - Password Resets: Employees can reset passwords at account.ourcompany.com/reset.

@@ -13,7 +13,8 @@ export default function Sidebar({ role }) {
   ];
 
   const agentLinks = [
-    { name: 'Dashboard', path: '/agent/dashboard', icon: Inbox, matchPaths: ['/agent/dashboard', '/agent/my-assigned'] },
+    // FIX 1: Added '/agent/completed' to matchPaths so the Dashboard stays lit up
+    { name: 'Dashboard', path: '/agent/dashboard', icon: Inbox, matchPaths: ['/agent/dashboard', '/agent/my-assigned', '/agent/completed'] },
     { name: 'Filters', action: 'toggle-filters', icon: Filter },
   ];
 
@@ -46,25 +47,26 @@ export default function Sidebar({ role }) {
           {role === 'admin' ? 'Admin Portal' : 'Agent Workspace'}
         </h2>
       </div>
-      
+
       <nav className="flex-col mt-md">
         {links.map(link => {
           const Icon = link.icon;
-          
+
           if (link.action === 'toggle-filters') {
             const isActive = showFilters;
             return (
-              <button 
-                key={link.name} 
+              <button
+                key={link.name}
                 onClick={handleToggleFilters}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: 'var(--space-sm)',
                   padding: '12px var(--space-lg)',
-                  color: 'var(--secondary-bg)',
-                  backgroundColor: 'transparent',
-                  borderLeft: '4px solid transparent',
+                  // FIX 2: Added the dynamic isActive styles so the button lights up
+                  color: isActive ? 'white' : 'var(--secondary-bg)',
+                  backgroundColor: isActive ? 'rgba(255,255,255,0.1)' : 'transparent',
+                  borderLeft: isActive ? '4px solid var(--info)' : '4px solid transparent',
                   borderTop: 'none', borderRight: 'none', borderBottom: 'none',
                   cursor: 'pointer',
                   width: '100%',
@@ -80,8 +82,8 @@ export default function Sidebar({ role }) {
 
           const isActive = link.matchPaths ? link.matchPaths.some(p => location.pathname.includes(p)) : location.pathname === link.path;
           return (
-            <Link 
-              key={link.name} 
+            <Link
+              key={link.name}
               to={link.path + (searchParams.toString() ? `?${searchParams.toString()}` : '')}
               style={{
                 display: 'flex',

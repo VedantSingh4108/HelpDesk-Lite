@@ -3,7 +3,6 @@ import { useState } from 'react';
 export default function SubmitTicket() {
   // --- Ticket Form State ---
   const [title, setTitle] = useState('');
-  const [category, setCategory] = useState('Technical Support');
   const [description, setDescription] = useState('');
   const [alertMsg, setAlertMsg] = useState(null); // To show success or error
 
@@ -26,7 +25,8 @@ export default function SubmitTicket() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ title, category, description }),
+        // Category is removed here! The backend AI will handle it.
+        body: JSON.stringify({ title, description }),
       });
 
       const data = await response.json();
@@ -34,7 +34,6 @@ export default function SubmitTicket() {
       if (response.ok) {
         setTitle('');
         setDescription('');
-        setCategory('Technical Support');
         setAlertMsg({ type: 'success', text: 'Ticket successfully submitted!' });
       } else {
         setAlertMsg({ type: 'error', text: data.message || 'Failed to submit ticket.' });
@@ -68,6 +67,14 @@ export default function SubmitTicket() {
           )}
 
           <form className="flex-col gap-md" onSubmit={handleTicketSubmit}>
+
+            {/* Added a subtle UI hint that the AI is working */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '-8px' }}>
+              <span style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                ✨ AI Auto-Categorized
+              </span>
+            </div>
+
             <div className="flex-col gap-xs">
               <label className="label">Title</label>
               <input
@@ -78,20 +85,6 @@ export default function SubmitTicket() {
                 className="input-field"
                 placeholder="Brief summary of the issue"
               />
-            </div>
-
-            <div className="flex-col gap-xs">
-              <label className="label">Category</label>
-              <select
-                className="input-field"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-              >
-                <option value="Technical Support">Technical Support</option>
-                <option value="Billing & Subscriptions">Billing & Subscriptions</option>
-                <option value="Feature Request">Feature Request</option>
-                <option value="Account Access">Account Access</option>
-              </select>
             </div>
 
             <div className="flex-col gap-xs">

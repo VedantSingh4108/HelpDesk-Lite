@@ -1,18 +1,79 @@
 const Ticket = require('../models/Ticket');
+// 1. Import the official Gemini SDK 
+const { GoogleGenAI, Type } = require('@google/genai');
+const Category = require('../models/Category');
+// Initialize the AI with your existing environment variable
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-// @desc    Create a new ticket
+// @desc    Create a new ticket with AI Categorization
 // @route   POST /api/tickets
 const createTicket = async (req, res) => {
-    const { title, description, category } = req.body;
+    // Notice we no longer require 'category' from the frontend!
+    const { title, description } = req.body;
 
     try {
+        // 1. Fetch LIVE categories from MongoDB
+        const liveCategories = await Category.find({});
+
+        // Extract just the names into an array. Add a failsafe just in case the DB is completely empty.
+        const dynamicCategoryNames = liveCategories.length > 0
+            ? liveCategories.map(cat => cat.name)
+            : ["Technical Support"];
+
+        // 2. Set up our safe default values in case the AI request fails
+        let finalCategory = dynamicCategoryNames[0]; // Defaults to the first live category
+        let finalPriority = 'medium';
+
+        // 3. Ask Gemini to classify the ticket
+        try {
+            const prompt = `You are an advanced helpdesk routing AI. Analyze the incoming support ticket title and description. Classify it into one of the allowed categories and determine its priority level based on the urgency of the problem described.
+            
+            Title: ${title}
+            Description: ${description}`;
+
+            const response = await ai.models.generateContent({
+                model: 'gemini-flash-lite-latest', // The fastest model for structured data
+                contents: prompt,
+                config: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: Type.OBJECT, // Assuming you have imported Type from the SDK
+                        properties: {
+                            category: {
+                                type: Type.STRING,
+                                // 🔥 THE MAGIC SAUCE: Inject the live database array here!
+                                enum: dynamicCategoryNames
+                            },
+                            priority: {
+                                type: Type.STRING,
+                                enum: ["low", "medium", "high"]
+                            }
+                        },
+                        required: ["category", "priority"]
+                    }
+                }
+            });
+
+            // Parse the guaranteed JSON response
+            const aiDecision = JSON.parse(response.text);
+            finalCategory = aiDecision.category;
+            finalPriority = aiDecision.priority;
+
+            console.log("🤖 Gemini Successfully Categorized Ticket:", aiDecision);
+
+        } catch (aiError) {
+            console.error("⚠️ Gemini Classification Failed. Reverting to default values.", aiError.message);
+            // We do NOT throw an error here. We want the ticket to save regardless!
+        }
+
+        // 4. Save to the database using the AI's choices
         const ticket = await Ticket.create({
-            user: req.user._id, // Got this from our authMiddleware!
+            user: req.user._id,
             title,
             description,
-            category,
+            category: finalCategory,
             status: 'open',
-            priority: 'low' // Default, Agents can change this later
+            priority: finalPriority
         });
 
         res.status(201).json(ticket);
@@ -21,58 +82,90 @@ const createTicket = async (req, res) => {
     }
 };
 
+// ... the rest of your controller functions stay exactly the same
 // @desc    Get tickets (End-users get their own, Agents/Admins get all)
 // @route   GET /api/tickets
 // Inside backend/controllers/ticketController.js
 
+// @desc    Get tickets (Filters based on user role)
+// @route   GET /api/tickets
+// @access  Private
+// @desc    Get tickets (Filters based on user role)
+// @route   GET /api/tickets
+// @access  Private
+// @desc    Get tickets (Filters based on user role AND assignment)
+// @route   GET /api/tickets
+// @access  Private
 const getTickets = async (req, res) => {
     try {
-        // 1. Create an empty filter object
-        let query = {};
+        const userId = req.user._id || req.user.id;
 
-        // 2. Check if the frontend is asking for 'My Assigned' tickets
-        if (req.query.assignedTo === 'me') {
-            // req.user._id comes from your protect/auth middleware
-            query.assignedTo = req.user._id;
+        if (!userId) {
+            return res.status(401).json({ message: 'Authentication error: User ID missing.' });
         }
 
-        // 3. Fetch tickets using the filter (Empty query gets all, specific query gets yours)
-        const tickets = await Ticket.find(query).populate('assignedTo', 'name email');
+        // 1. Admin & Support Agent Logic
+        if (req.user.role === 'admin' || req.user.role === 'support-agent') {
 
-        res.json(tickets);
+            // Start with an empty query (which grabs everything)
+            let agentQuery = {};
+
+            // If the frontend explicitly asks for "my assigned" tickets, update the query!
+            if (req.query.assignedTo === 'me') {
+                agentQuery.assignedTo = userId;
+            }
+
+            // Also added .populate('assignedTo') so the frontend knows exactly who claimed it
+            const allTickets = await Ticket.find(agentQuery)
+                .populate('user', 'name email')
+                .populate('assignedTo', 'name email');
+
+            return res.json(allTickets);
+        }
+
+        // 2. End-User Logic (Stays exactly the same)
+        const userTickets = await Ticket.find({ user: userId });
+        res.json(userTickets);
+
     } catch (error) {
-        res.status(500).json({ message: "Server error fetching tickets." });
+        res.status(500).json({ message: 'Failed to fetch tickets', error: error.message });
     }
 };
 
 // @desc    Update a ticket (Only if it's still 'open')
 // @route   PUT /api/tickets/:id
+// @desc    Update a ticket (Allows edits if open, allows closing anytime)
+// @route   PUT /api/tickets/:id
 const updateTicket = async (req, res) => {
     try {
-        // 1. Find the specific ticket they are trying to edit
+        // 1. Find the specific ticket
         const ticket = await Ticket.findById(req.params.id);
 
         if (!ticket) {
             return res.status(404).json({ message: 'Ticket not found.' });
         }
 
-        // 2. Security Check: Ensure the user actually owns this ticket (unless they are an admin/agent)
+        // 2. Security Check: Ensure the user actually owns this ticket
         if (ticket.user.toString() !== req.user._id.toString() && req.user.role === 'end-user') {
             return res.status(401).json({ message: 'Not authorized to edit this ticket.' });
         }
 
-        // 3. THE LOCKOUT RULE: If the ticket isn't 'open', they can't touch it
-        if (ticket.status !== 'open') {
+        // 3. Identify if the user is just trying to close the ticket
+        const isClosingRequest = req.body.status === 'closed';
+
+        // 4. THE ADJUSTED LOCKOUT RULE:
+        // Block edits if it's not 'open', BUT allow the request through if they are just trying to close it!
+        if (ticket.status !== 'open' && !isClosingRequest && req.user.role === 'end-user') {
             return res.status(400).json({
-                message: 'You cannot edit this ticket because it is currently under process by our team.'
+                message: 'You cannot edit the details of this ticket because it is currently under process.'
             });
         }
 
-        // 4. If it IS open, go ahead and update the database
+        // 5. Go ahead and update the database
         const updatedTicket = await Ticket.findByIdAndUpdate(
             req.params.id,
-            req.body, // This contains the new title/description from the frontend
-            { returnDocument: 'after' } // This tells MongoDB to hand us back the freshly updated version
+            req.body,
+            { returnDocument: 'after' }
         );
 
         res.status(200).json(updatedTicket);
@@ -81,7 +174,6 @@ const updateTicket = async (req, res) => {
         res.status(500).json({ message: 'Server error while updating ticket.', error: error.message });
     }
 };
-
 // @desc    Get tickets (Supports filtering by assignedTo)
 // @route   GET /api/tickets
 // @access  Private (Agent/Admin only)
@@ -173,10 +265,60 @@ const updateTicketByAgent = async (req, res) => {
         res.status(500).json({ message: 'Failed to update ticket' });
     }
 };
+// @desc    Get Admin Analytics
+// @route   GET /api/admin/analytics
+// @access  Private (Admin only)
+const getAdminAnalytics = async (req, res) => {
+    try {
+        // 1. Calculate the high-level stats
+        const total = await Ticket.countDocuments();
+        const open = await Ticket.countDocuments({ status: { $in: ['open', 'in-progress'] } });
+        const resolved = await Ticket.countDocuments({ status: { $in: ['resolved', 'closed'] } });
 
+        // 2. Build the chart data (Group tickets by the date they were created)
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+        const dailyTickets = await Ticket.aggregate([
+            {
+                // Only grab tickets from the last 7 days
+                $match: { createdAt: { $gte: sevenDaysAgo } }
+            },
+            {
+                // Group them by formatting the Date into a "YYYY-MM-DD" string
+                $group: {
+                    _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+                    count: { $sum: 1 }
+                }
+            },
+            {
+                // Sort by date ascending (oldest to newest)
+                $sort: { _id: 1 }
+            }
+        ]);
+
+        // 3. Format the data perfectly for Recharts
+        const formattedChartData = dailyTickets.map(item => ({
+            date: item._id, // e.g., "2026-06-08"
+            count: item.count
+        }));
+
+        res.json({
+            stats: { total, open, resolved },
+            chartData: formattedChartData
+        });
+
+    } catch (error) {
+        console.error("Analytics Error:", error);
+        res.status(500).json({ message: 'Failed to fetch analytics data' });
+    }
+};
+
+// Don't forget to export it at the bottom!
 module.exports = {
     createTicket, getTickets, updateTicket,
     getAllTickets,
     claimTicket,
-    updateTicketByAgent
+    updateTicketByAgent,
+    getAdminAnalytics
 };

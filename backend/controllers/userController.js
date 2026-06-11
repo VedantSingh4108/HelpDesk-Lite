@@ -3,14 +3,14 @@ const jwt = require('jsonwebtoken');
 
 // Helper function to generate a JWT
 const generateToken = (id, role) => {
-    // Signs the token with a secret key, expires in 30 days
     return jwt.sign({ id, role }, process.env.JWT_SECRET || 'supersecretkey123', {
         expiresIn: '30d',
     });
 };
 
-// @desc    Auth user & get token (LOGIN)
+// @desc    Authenticate user & get token
 // @route   POST /api/users/login
+// @access  Public
 const authUser = async (req, res) => {
     const { email, password } = req.body;
 
@@ -34,4 +34,81 @@ const authUser = async (req, res) => {
     }
 };
 
-module.exports = { authUser };
+// @desc    Get all users
+// @route   GET /api/users
+// @access  Private/Admin
+const getUsers = async (req, res) => {
+    try {
+        // Fetch all users but exclude their passwords for security
+        const users = await User.find({}).select('-password');
+        res.json(users);
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to fetch users', error: error.message });
+    }
+};
+
+// @desc    Update user role
+// @route   PUT /api/users/:id/role
+// @access  Private/Admin
+const updateUserRole = async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+
+        if (user) {
+            user.role = req.body.role || user.role;
+            const updatedUser = await user.save();
+
+            res.json({
+                _id: updatedUser._id,
+                name: updatedUser.name,
+                email: updatedUser.email,
+                role: updatedUser.role,
+            });
+        } else {
+            res.status(404).json({ message: 'User not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to update user role', error: error.message });
+    }
+};
+
+// @desc    Create a new user (Admin Panel)
+// @route   POST /api/users
+// @access  Private/Admin
+const createUser = async (req, res) => {
+    // UPDATED: Added password extraction here
+    const { name, email, role, password } = req.body;
+
+    try {
+        // 1. Check if the email is already in use
+        const userExists = await User.findOne({ email });
+        if (userExists) {
+            return res.status(400).json({ message: 'User already exists with this email' });
+        }
+
+        // 2. Create the user
+        const user = await User.create({
+            name,
+            email,
+            // UPDATED: Use provided password if it exists, otherwise use default
+            password: password || 'Password123!',
+            // FIXED: Changed 'user' to 'end-user' to perfectly match Mongoose enum
+            role: role || 'end-user'
+        });
+
+        if (user) {
+            res.status(201).json({
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+            });
+        } else {
+            res.status(400).json({ message: 'Invalid user data received' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to create user', error: error.message });
+    }
+};
+
+module.exports = { authUser, getUsers, updateUserRole, createUser };

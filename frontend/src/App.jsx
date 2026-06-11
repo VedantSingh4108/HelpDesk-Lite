@@ -55,6 +55,7 @@ function App() {
           <Route path="/agent" element={<Navigate to="/agent/dashboard" replace />} />
           <Route path="/agent/dashboard" element={<SupportAgentDashboard />} />
           <Route path="/agent/my-assigned" element={<SupportAgentDashboard />} />
+          <Route path="/agent/completed" element={<SupportAgentDashboard />} />
 
           {/* Admin Routes */}
           <Route path="/admin" element={<AdminAnalytics />} />
