@@ -1,4 +1,5 @@
 const Ticket = require('../models/Ticket');
+const sendEmail = require('../utils/sendEmail');
 // 1. Import the official Gemini SDK 
 const { GoogleGenAI, Type } = require('@google/genai');
 const Category = require('../models/Category');
@@ -136,42 +137,55 @@ const getTickets = async (req, res) => {
 // @route   PUT /api/tickets/:id
 // @desc    Update a ticket (Allows edits if open, allows closing anytime)
 // @route   PUT /api/tickets/:id
+// @desc    Update a ticket (Status changes, etc.)
+// @route   PUT /api/tickets/:id
+// @access  Private
 const updateTicket = async (req, res) => {
     try {
-        // 1. Find the specific ticket
-        const ticket = await Ticket.findById(req.params.id);
+        // Find the ticket and grab the user's email
+        const ticket = await Ticket.findById(req.params.id).populate('user', 'name email');
 
         if (!ticket) {
-            return res.status(404).json({ message: 'Ticket not found.' });
+            return res.status(404).json({ message: 'Ticket not found' });
         }
 
-        // 2. Security Check: Ensure the user actually owns this ticket
-        if (ticket.user.toString() !== req.user._id.toString() && req.user.role === 'end-user') {
-            return res.status(401).json({ message: 'Not authorized to edit this ticket.' });
+        // Keep track of the old status to see if it actually changed
+        const oldStatus = ticket.status;
+
+        // Update the ticket fields
+        ticket.status = req.body.status || ticket.status;
+        ticket.description = req.body.description || ticket.description;
+
+        const updatedTicket = await ticket.save();
+
+        // --- NEW: EMAIL NOTIFICATION LOGIC ---
+        // Only send an email if the status was actually changed by this request
+        if (req.body.status && req.body.status !== oldStatus) {
+
+            let message = `Hi ${ticket.user.name},\n\nYour ticket "${ticket.title}" has been updated to: ${ticket.status.toUpperCase()}.\n\n`;
+
+            // If the agent marked it resolved, ask the user to close it!
+            if (ticket.status === 'resolved') {
+                message += `Our support team believes this issue is now resolved! \n\nPlease log into your dashboard to review the fix. If everything looks good, kindly click the "Close" button on the ticket to officially wrap it up.\n\nhttp://localhost:5173/my-tickets`;
+            } else {
+                message += `Log in to view your ticket details: http://localhost:5173/my-tickets`;
+            }
+
+            try {
+                await sendEmail({
+                    email: ticket.user.email,
+                    subject: `Ticket Status Update: ${ticket.title}`,
+                    message
+                });
+            } catch (emailErr) {
+                console.error("Non-fatal: Failed to send status notification email", emailErr);
+            }
         }
+        // --------------------------------------
 
-        // 3. Identify if the user is just trying to close the ticket
-        const isClosingRequest = req.body.status === 'closed';
-
-        // 4. THE ADJUSTED LOCKOUT RULE:
-        // Block edits if it's not 'open', BUT allow the request through if they are just trying to close it!
-        if (ticket.status !== 'open' && !isClosingRequest && req.user.role === 'end-user') {
-            return res.status(400).json({
-                message: 'You cannot edit the details of this ticket because it is currently under process.'
-            });
-        }
-
-        // 5. Go ahead and update the database
-        const updatedTicket = await Ticket.findByIdAndUpdate(
-            req.params.id,
-            req.body,
-            { returnDocument: 'after' }
-        );
-
-        res.status(200).json(updatedTicket);
-
+        res.json(updatedTicket);
     } catch (error) {
-        res.status(500).json({ message: 'Server error while updating ticket.', error: error.message });
+        res.status(500).json({ message: 'Failed to update ticket', error: error.message });
     }
 };
 // @desc    Get tickets (Supports filtering by assignedTo)
@@ -227,7 +241,7 @@ const claimTicket = async (req, res) => {
                     status: 'in-progress'
                 }
             },
-            { new: true }
+            { returnDocument: 'after' }
         );
 
         if (!ticket) {
