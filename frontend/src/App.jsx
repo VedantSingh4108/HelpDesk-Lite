@@ -1,11 +1,11 @@
 import { BrowserRouter as Router, Routes, Route, Outlet, useLocation, Navigate } from 'react-router-dom';
 import TopNav from './components/TopNav';
 import Sidebar from './components/Sidebar';
-import Chatbot from './components/Chatbot'; // <-- Vite is looking for this inside src/components/
+import Chatbot from './components/Chatbot';
 
 // Pages
 import LoginScreen from './pages/LoginScreen';
-import SubmitTicket from './pages/SubmitTicket'; // <-- UPDATED FROM SubmissionAndChatbot
+import SubmitTicket from './pages/SubmitTicket';
 import MyTickets from './pages/MyTickets';
 import SupportAgentDashboard from './pages/SupportAgentDashboard';
 import AdminAnalytics from './pages/AdminAnalytics';
@@ -13,6 +13,10 @@ import UserManagement from './pages/UserManagement';
 import CategoryManagement from './pages/CategoryManagement';
 import HelpAndSupport from './pages/HelpAndSupport';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+
+// --- ADDED THE IMPORTS HERE ---
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 // Layout wrapper to inject Nav/Sidebar based on role
 function AppLayout() {
@@ -41,12 +45,17 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* PUBLIC ROUTES (No Sidebar/TopNav) */}
         <Route path="/" element={<LoginScreen />} />
 
-        {/* Protected Routes Wrapper */}
+        {/* --- ADDED THE ROUTES HERE --- */}
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:resettoken" element={<ResetPassword />} />
+
+        {/* PROTECTED ROUTES (Inside AppLayout) */}
         <Route element={<AppLayout />}>
           {/* End-User Routes */}
-          <Route path="/submit" element={<SubmitTicket />} /> {/* <-- UPDATED ROUTE */}
+          <Route path="/submit" element={<SubmitTicket />} />
           <Route path="/my-tickets" element={<MyTickets />} />
           <Route path="/support" element={<HelpAndSupport />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />

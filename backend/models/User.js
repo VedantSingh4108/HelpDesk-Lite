@@ -10,6 +10,8 @@ const UserSchema = new mongoose.Schema({
         enum: ['end-user', 'support-agent', 'admin'],
         default: 'end-user'
     },
+    resetPasswordToken: String,
+    resetPasswordExpire: Date,
     department: { type: String },
     createdAt: { type: Date, default: Date.now }
 });
@@ -18,7 +20,7 @@ const UserSchema = new mongoose.Schema({
 UserSchema.pre('save', async function (next) {
     // If the password hasn't been changed/added, move on
     if (!this.isModified('password')) {
-        return next();
+        return next;
     }
     // Scramble it with a "salt" of 10 rounds
     const salt = await bcrypt.genSalt(10);

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock } from 'lucide-react';
-
+import { Link } from 'react-router-dom';
 export default function LoginScreen() {
   const navigate = useNavigate();
 
@@ -118,6 +118,11 @@ export default function LoginScreen() {
                 className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 placeholder={'••••••••'}
               />
+            </div>
+            <div className="flex justify-end mt-1">
+              <Link to="/forgot-password" className="text-[13px] font-medium text-blue-600 hover:text-blue-700 hover:underline transition-colors">
+                Forgot Password?
+              </Link>
             </div>
           </div>
 
