@@ -19,7 +19,7 @@ const app = express();
 // ==========================================
 const allowedOrigins = [
     'http://localhost:5173', // For your local frontend testing
-    'https://helpdesk-lite-six.vercel.app' // Your live Vercel frontend
+    'https://help-desk-lite-neon.vercel.app' // Your live Vercel frontend
 ];
 
 app.use(cors({
