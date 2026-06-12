@@ -53,7 +53,7 @@ export default function SupportAgentDashboard() {
       const config = { headers: { Authorization: `Bearer ${loggedInUser.token}` } };
 
       // We fetch all tickets or assigned tickets. The frontend will handle filtering out 'completed'
-      const url = activeFilter === 'assigned' ? https ://helpdesk-backend-aer8.onrender.com/api/tickets?assignedTo=me' : https://helpdesk-backend-aer8.onrender.com/api/tickets';
+      const url = activeFilter === 'assigned' ? 'https ://helpdesk-backend-aer8.onrender.com/api/tickets?assignedTo=me' : 'https://helpdesk-backend-aer8.onrender.com/api/tickets';
 
       const { data } = await axios.get(url, config);
       setTickets(data);
@@ -134,9 +134,9 @@ export default function SupportAgentDashboard() {
   const handleClaimTicket = async (ticketId) => {
     try {
       const config = { headers: { Authorization: `Bearer ${loggedInUser.token}` } };
-      await axios.put(https://helpdesk-backend-aer8.onrender.com/api/tickets/${ticketId}/claim`, {}, config);
+      await axios.put(`https://helpdesk-backend-aer8.onrender.com/api/tickets/${ticketId}/claim`, {}, config);
 
-        fetchTickets();
+      fetchTickets();
       setSelectedTicket(null);
     } catch (error) {
       if (error.response && error.response.status === 409) {
@@ -160,8 +160,8 @@ export default function SupportAgentDashboard() {
 
     try {
       const config = { headers: { Authorization: `Bearer ${loggedInUser.token}` } };
-      await axios.put(https://helpdesk-backend-aer8.onrender.com/api/tickets/${ticketId}`, { status: newStatus }, config);
-        fetchTickets();
+      await axios.put(`https://helpdesk-backend-aer8.onrender.com/api/tickets/${ticketId}`, { status: newStatus }, config);
+      fetchTickets();
     } catch (error) {
       console.error("Error updating status:", error.response?.data || error.message);
       alert(`Update failed: ${error.response?.data?.message || 'Check console'}`);
