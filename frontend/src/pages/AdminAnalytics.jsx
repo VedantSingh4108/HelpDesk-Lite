@@ -38,9 +38,9 @@ export default function AdminAnalytics() {
         const token = localStorage.getItem('helpdeskToken');
         const config = { headers: { Authorization: `Bearer ${token}` } };
 
-        const { data } = await axios.get('/api/tickets/admin/analytics', config);
+        const { data } = await axios.get(https://helpdesk-backend-aer8.onrender.com/api/tickets/admin/analytics', config);
 
-        setStats(data.stats);
+          setStats(data.stats);
         setChartData(data.chartData);
       } catch (err) {
         console.error("Error fetching analytics:", err);
