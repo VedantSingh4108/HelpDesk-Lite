@@ -16,7 +16,7 @@ export default function ForgotPassword() {
 
         try {
             // Send the email to our new backend route
-            const { data } = await axios.post('http://localhost:5000/api/users/forgotpassword', { email });
+            const { data } = await axios.post('https://helpdesk-backend-aer8.onrender.com/api/users/forgotpassword', { email });
             setMessage(data.message);
         } catch (err) {
             setError(err.response?.data?.message || 'Something went wrong. Please try again.');

@@ -21,7 +21,7 @@ export default function UserManagement() {
       const token = localStorage.getItem('helpdeskToken');
       const config = { headers: { Authorization: `Bearer ${token}` } };
 
-      const { data } = await axios.get('http://localhost:5000/api/users', config);
+      const { data } = await axios.get('https://helpdesk-backend-aer8.onrender.com/api/users', config);
       setUsers(data);
     } catch (err) {
       setError("Failed to load users. Ensure you have Admin privileges.");
@@ -64,13 +64,13 @@ export default function UserManagement() {
     try {
       if (editingUser) {
         // Update existing user
-        await axios.put(`http://localhost:5000/api/users/${editingUser._id}/role`, { role: formData.role }, config);
+        await axios.put(`https://helpdesk-backend-aer8.onrender.com/api/users/${editingUser._id}/role`, { role: formData.role }, config);
         setUpdateMsg({ type: 'success', text: 'User updated successfully!' });
         fetchUsers();
         setTimeout(() => handleCloseModal(), 1500);
       } else {
         // Create new user - Now sending the password!
-        await axios.post('http://localhost:5000/api/users', {
+        await axios.post('https://helpdesk-backend-aer8.onrender.com/api/users', {
           name: formData.name,
           email: formData.email,
           role: formData.role,

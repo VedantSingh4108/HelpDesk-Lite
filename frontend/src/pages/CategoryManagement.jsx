@@ -21,7 +21,7 @@ export default function CategoryManagement() {
       const token = localStorage.getItem('helpdeskToken');
       const config = { headers: { Authorization: `Bearer ${token}` } };
 
-      const { data } = await axios.get('http://localhost:5000/api/categories', config);
+      const { data } = await axios.get('https://helpdesk-backend-aer8.onrender.com/api/categories', config);
       setCategories(data);
     } catch (err) {
       setError("Failed to load categories. Ensure you are connected to the server.");
@@ -63,11 +63,11 @@ export default function CategoryManagement() {
     try {
       if (editingCategory) {
         // Update existing category
-        await axios.put(`http://localhost:5000/api/categories/${editingCategory._id}`, formData, config);
+        await axios.put(`https://helpdesk-backend-aer8.onrender.com/api/categories/${editingCategory._id}`, formData, config);
         setUpdateMsg({ type: 'success', text: 'Category updated successfully!' });
       } else {
         // Create new category
-        await axios.post('http://localhost:5000/api/categories', formData, config);
+        await axios.post('https://helpdesk-backend-aer8.onrender.com/api/categories', formData, config);
         setUpdateMsg({ type: 'success', text: 'Category created successfully!' });
       }
 

@@ -28,7 +28,7 @@ export default function MyTickets() {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/tickets', {
+      const response = await fetch('https://helpdesk-backend-aer8.onrender.com/api/tickets', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
@@ -54,7 +54,7 @@ export default function MyTickets() {
     setLoadingComments(true);
     try {
       const token = localStorage.getItem('helpdeskToken');
-      const { data } = await axios.get(`http://localhost:5000/api/comments/${ticketId}`, {
+      const { data } = await axios.get(`https://helpdesk-backend-aer8.onrender.com/api/comments/${ticketId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setComments(data);
@@ -80,7 +80,7 @@ export default function MyTickets() {
     try {
       const token = localStorage.getItem('helpdeskToken');
       const { data } = await axios.post(
-        `http://localhost:5000/api/comments/${selectedTicket._id}`,
+        `https://helpdesk-backend-aer8.onrender.com/api/comments/${selectedTicket._id}`,
         { text: newComment },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -99,7 +99,7 @@ export default function MyTickets() {
     const token = localStorage.getItem('helpdeskToken');
 
     try {
-      const response = await fetch(`http://localhost:5000/api/tickets/${selectedTicket._id}`, {
+      const response = await fetch(`https://helpdesk-backend-aer8.onrender.com/api/tickets/${selectedTicket._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -129,7 +129,7 @@ export default function MyTickets() {
     const token = localStorage.getItem('helpdeskToken');
     try {
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      await axios.put(`http://localhost:5000/api/tickets/${ticketId}`, { status: 'closed' }, config);
+      await axios.put(`https://helpdesk-backend-aer8.onrender.com/api/tickets/${ticketId}`, { status: 'closed' }, config);
       fetchTickets();
     } catch (error) {
       console.error("Error closing ticket:", error);

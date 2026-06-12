@@ -75,7 +75,7 @@ export default function SupportAgentDashboard() {
     setLoadingComments(true);
     try {
       const config = { headers: { Authorization: `Bearer ${loggedInUser.token}` } };
-      const { data } = await axios.get(`http://localhost:5000/api/comments/${ticketId}`, config);
+      const { data } = await axios.get(`https://helpdesk-backend-aer8.onrender.com/api/comments/${ticketId}`, config);
       setComments(data);
     } catch (error) {
       console.error("Error fetching comments:", error);
@@ -97,7 +97,7 @@ export default function SupportAgentDashboard() {
     setIsSuggesting(true);
     try {
       const config = { headers: { Authorization: `Bearer ${loggedInUser.token}` } };
-      const { data } = await axios.get(`http://localhost:5000/api/tickets/${selectedTicket._id}/suggest-reply`, config);
+      const { data } = await axios.get(`https://helpdesk-backend-aer8.onrender.com/api/tickets/${selectedTicket._id}/suggest-reply`, config);
 
       // Auto-insert the AI's draft directly into the typing box!
       setNewComment(data.suggestion);
@@ -117,7 +117,7 @@ export default function SupportAgentDashboard() {
     try {
       const config = { headers: { Authorization: `Bearer ${loggedInUser.token}` } };
       const { data } = await axios.post(
-        `http://localhost:5000/api/comments/${selectedTicket._id}`,
+        `https://helpdesk-backend-aer8.onrender.com/api/comments/${selectedTicket._id}`,
         { text: newComment },
         config
       );

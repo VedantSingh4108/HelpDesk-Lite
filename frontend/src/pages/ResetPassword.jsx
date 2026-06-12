@@ -26,7 +26,7 @@ export default function ResetPassword() {
 
         try {
             // Send the NEW password to the backend, attaching the token to the URL
-            await axios.put(`http://localhost:5000/api/users/resetpassword/${resettoken}`, { password });
+            await axios.put(`https://helpdesk-backend-aer8.onrender.com/api/users/resetpassword/${resettoken}`, { password });
 
             setSuccess(true);
 
