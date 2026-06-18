@@ -46,7 +46,7 @@ const addComment = async (req, res) => {
         // --- NEW: EMAIL NOTIFICATION LOGIC ---
         // If the person who just commented is NOT the end-user, send the end-user an email!
         if (req.user.role !== 'end-user') {
-            const ticketUrl = `http://localhost:5173/my-tickets`;
+            const ticketUrl = `http://help-desk-lite-neon.vercel.app/my-tickets`;
             const message = `
                 Hi ${ticket.user.name}, \n
                 A support agent has just replied to your ticket (ID: ${ticket._id.toString().slice(-6).toUpperCase()}). \n
