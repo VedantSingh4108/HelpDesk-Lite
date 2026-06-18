@@ -4,6 +4,7 @@ export default function SubmitTicket() {
   // --- Ticket Form State ---
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [file, setFile] = useState(null); // <-- NEW: State for the file
   const [alertMsg, setAlertMsg] = useState(null); // To show success or error
 
   // --- Backend API Submission Logic ---
@@ -18,15 +19,24 @@ export default function SubmitTicket() {
       return;
     }
 
+    // NEW: We must use FormData instead of JSON when sending files
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('description', description);
+    if (file) {
+      formData.append('attachment', file); // 'attachment' matches upload.single('attachment') in your backend
+    }
+
     try {
+      // CHANGED: Pointing to localhost for local testing. Change back to render later!
       const response = await fetch('https://helpdesk-backend-aer8.onrender.com/api/tickets', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          // IMPORTANT: Do NOT manually set 'Content-Type' when sending FormData.
+          // The browser automatically sets it to 'multipart/form-data' with the correct boundary.
           'Authorization': `Bearer ${token}`
         },
-        // Category is removed here! The backend AI will handle it.
-        body: JSON.stringify({ title, description }),
+        body: formData,
       });
 
       const data = await response.json();
@@ -34,12 +44,13 @@ export default function SubmitTicket() {
       if (response.ok) {
         setTitle('');
         setDescription('');
+        setFile(null); // Clear the file after success
         setAlertMsg({ type: 'success', text: 'Ticket successfully submitted!' });
       } else {
         setAlertMsg({ type: 'error', text: data.message || 'Failed to submit ticket.' });
       }
     } catch (error) {
-      setAlertMsg({ type: 'error', text: 'Server error. Is the backend running?' });
+      setAlertMsg({ type: 'error', text: 'Server error. Is the local backend running?' });
     }
   };
 
@@ -102,23 +113,34 @@ export default function SubmitTicket() {
 
             <div className="flex-col gap-xs">
               <label className="label">Attachments (Optional)</label>
-              <div style={{
+
+              {/* NEW: Changed div to a <label> so clicking the box opens the file dialog automatically */}
+              <label style={{
                 border: '1px dashed var(--border)',
                 padding: 'var(--space-md)',
                 borderRadius: 'var(--radius-std)',
                 textAlign: 'center',
-                backgroundColor: 'var(--background)'
+                backgroundColor: 'var(--background)',
+                display: 'block', // Ensures the label acts like a full-width block
+                cursor: 'pointer' // Shows the user they can click it
               }}>
-                <p className="text-muted" style={{ fontSize: '14px' }}>Drag and drop files here, or click to browse</p>
-                <input type="file" style={{ display: 'none' }} />
-              </div>
+                <p className="text-muted" style={{ fontSize: '14px', margin: 0 }}>
+                  {/* NEW: Show the selected file name so the user knows it worked */}
+                  {file ? `📄 ${file.name}` : 'Drag and drop files here, or click to browse'}
+                </p>
+                <input
+                  type="file"
+                  style={{ display: 'none' }}
+                  onChange={(e) => setFile(e.target.files[0])} // Captures the file into state
+                />
+              </label>
             </div>
 
             <div className="flex justify-end gap-sm mt-md">
               <button
                 type="button"
                 className="btn btn-secondary"
-                onClick={() => { setTitle(''); setDescription(''); }}
+                onClick={() => { setTitle(''); setDescription(''); setFile(null); }}
               >
                 Cancel
               </button>

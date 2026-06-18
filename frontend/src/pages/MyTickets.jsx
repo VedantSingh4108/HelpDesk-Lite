@@ -200,7 +200,20 @@ export default function MyTickets() {
                 return (
                   <tr style={{ borderBottom: '1px solid var(--border)' }} key={ticket._id}>
                     <td style={{ padding: 'var(--space-md)', fontWeight: 500 }}>T-{ticket._id.slice(-6).toUpperCase()}</td>
-                    <td style={{ padding: 'var(--space-md)' }}>{ticket.title}</td>
+                    <td style={{ padding: 'var(--space-md)' }}>
+                      <div>{ticket.title}</div>
+                      {/* 📎 ATTACHMENT LINK ADDED HERE */}
+                      {ticket.attachmentUrl && (
+                        <a
+                          href={ticket.attachmentUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ display: 'inline-flex', alignItems: 'center', fontSize: '12px', color: '#3b82f6', textDecoration: 'underline', marginTop: '4px' }}
+                        >
+                          📎 View Attachment
+                        </a>
+                      )}
+                    </td>
                     <td style={{ padding: 'var(--space-md)', color: 'var(--text-muted)' }}>{formatDate(ticket.createdAt)}</td>
                     <td style={{ padding: 'var(--space-md)' }}><span className={`badge ${statusInfo.class}`}>{statusInfo.label}</span></td>
                     <td style={{ padding: 'var(--space-md)' }}>
@@ -250,7 +263,20 @@ export default function MyTickets() {
               {completedTickets.map(ticket => (
                 <tr style={{ borderBottom: '1px solid var(--border)' }} key={ticket._id}>
                   <td style={{ padding: 'var(--space-md)', fontWeight: 500, color: 'var(--text-muted)' }}>T-{ticket._id.slice(-6).toUpperCase()}</td>
-                  <td style={{ padding: 'var(--space-md)', color: 'var(--text-muted)' }}>{ticket.title}</td>
+                  <td style={{ padding: 'var(--space-md)', color: 'var(--text-muted)' }}>
+                    <div>{ticket.title}</div>
+                    {/* 📎 ATTACHMENT LINK ADDED HERE */}
+                    {ticket.attachmentUrl && (
+                      <a
+                        href={ticket.attachmentUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ display: 'inline-flex', alignItems: 'center', fontSize: '12px', color: '#3b82f6', textDecoration: 'underline', marginTop: '4px' }}
+                      >
+                        📎 View Attachment
+                      </a>
+                    )}
+                  </td>
                   <td style={{ padding: 'var(--space-md)', color: 'var(--text-muted)' }}>{formatDate(ticket.createdAt)}</td>
                   <td style={{ padding: 'var(--space-md)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#16a34a', fontSize: '14px', fontWeight: 500 }}>

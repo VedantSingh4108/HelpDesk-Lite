@@ -5,6 +5,7 @@ const TicketSchema = new mongoose.Schema({
     title: { type: String, required: true },
     description: { type: String, required: true },
     category: { type: String, required: true }, // Technical, Billing, etc.
+    attachmentUrl: { type: String }, // Stores the Cloudinary file URL
     status: {
         type: String,
         enum: ['open', 'in-progress', 'resolved', 'closed'],

@@ -67,12 +67,16 @@ const createTicket = async (req, res) => {
             // We do NOT throw an error here. We want the ticket to save regardless!
         }
 
-        // 4. Save to the database using the AI's choices
+        // --- NEW: Grab the Cloudinary URL if a file was uploaded ---
+        const attachmentUrl = req.file ? req.file.path : null;
+
+        // 4. Save to the database using the AI's choices AND the attachment
         const ticket = await Ticket.create({
             user: req.user._id,
             title,
             description,
             category: finalCategory,
+            attachmentUrl, // <-- Saved to MongoDB here
             status: 'open',
             priority: finalPriority
         });

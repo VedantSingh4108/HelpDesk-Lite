@@ -310,12 +310,30 @@ export default function SupportAgentDashboard() {
                 }}
                 onClick={() => setSelectedTicket(ticket)}
               >
-                <div>
-                  <span className="label mr-md" style={{ marginRight: '8px' }}>
-                    #{ticket._id ? ticket._id.slice(-6).toUpperCase() : (ticket.id || 'NEW')}
-                  </span>
-                  <span style={{ fontWeight: 500 }}>{ticket.title || 'Untitled Ticket'}</span>
+                {/* Left Side: ID, Title, and Attachment */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <div>
+                    <span className="label mr-md" style={{ marginRight: '8px' }}>
+                      #{ticket._id ? ticket._id.slice(-6).toUpperCase() : (ticket.id || 'NEW')}
+                    </span>
+                    <span style={{ fontWeight: 500 }}>{ticket.title || 'Untitled Ticket'}</span>
+                  </div>
+
+                  {/* 📎 ATTACHMENT LINK FOR THE LIST */}
+                  {ticket.attachmentUrl && (
+                    <a
+                      href={ticket.attachmentUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      style={{ fontSize: '12px', color: '#3b82f6', textDecoration: 'underline', width: 'fit-content' }}
+                    >
+                      📎 View Attachment
+                    </a>
+                  )}
                 </div>
+
+                {/* Right Side: Status and Category */}
                 <div className="flex items-center gap-md">
                   <span className={`badge ${getStatusClass(ticket.status?.toLowerCase())}`} style={{ padding: '4px 8px', borderRadius: '12px', fontSize: '12px' }}>
                     {formatStatusDisplay(ticket.status)}
@@ -366,6 +384,21 @@ export default function SupportAgentDashboard() {
               <p className="text-sm" style={{ whiteSpace: 'pre-wrap', backgroundColor: 'var(--background)', padding: '8px', borderRadius: '4px' }}>
                 {selectedTicket.description || 'No description provided.'}
               </p>
+
+              {/* 📎 ATTACHMENT LINK ADDED RIGHT BELOW THE DESCRIPTION */}
+              {selectedTicket?.attachmentUrl && (
+                <div style={{ marginTop: '12px', padding: '12px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-muted)' }}>Attached File: </span>
+                  <a
+                    href={selectedTicket.attachmentUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: '#2563eb', textDecoration: 'underline', fontSize: '14px', marginLeft: '8px', display: 'inline-flex', alignItems: 'center' }}
+                  >
+                    📎 Click to Open Document
+                  </a>
+                </div>
+              )}
             </div>
 
             <div className="flex gap-md">
