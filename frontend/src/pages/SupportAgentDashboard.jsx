@@ -53,8 +53,9 @@ export default function SupportAgentDashboard() {
       const config = { headers: { Authorization: `Bearer ${loggedInUser.token}` } };
 
       // We fetch all tickets or assigned tickets. The frontend will handle filtering out 'completed'
-      const url = activeFilter === 'assigned' ? 'https ://helpdesk-backend-aer8.onrender.com/api/tickets?assignedTo=me' : 'https://helpdesk-backend-aer8.onrender.com/api/tickets';
-
+      const url = activeFilter === 'assigned'
+        ? 'https://helpdesk-backend-aer8.onrender.com/api/tickets?assignedTo=me'
+        : 'https://helpdesk-backend-aer8.onrender.com/api/tickets';
       const { data } = await axios.get(url, config);
       setTickets(data);
     } catch (error) {
