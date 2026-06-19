@@ -45,10 +45,14 @@ An enterprise-grade, full-stack IT Support Ticketing System designed for high-ef
 
 ### 1. Clone the repository
 ```bash
-git clone [https://github.com/yourusername/HelpdeskLite.git](https://github.com/yourusername/HelpdeskLite.git)
+git clone https://github.com/yourusername/HelpdeskLite.git
 cd HelpdeskLite
 
-2. Install Dependencies 
+```
+
+### 2. Install Dependencies
+
+```bash
 # Install backend dependencies (uses legacy-peer-deps to prevent package conflicts)
 cd backend
 npm install --legacy-peer-deps
@@ -57,8 +61,13 @@ npm install --legacy-peer-deps
 cd ../frontend
 npm install
 
-3. Environment Variables
-Create a .env file in the backend directory:
+```
+
+### 3. Environment Variables
+
+Create a `.env` file in the `backend` directory:
+
+```env
 PORT=5000
 MONGO_URI=your_mongodb_connection_string
 JWT_SECRET=your_super_secret_key
@@ -72,22 +81,40 @@ CLOUDINARY_API_SECRET=your_api_secret
 RESEND_API_KEY=your_resend_key
 GEMINI_API_KEY=your_gemini_api_key
 
-4. Run the Application
+```
+
+### 4. Run the Application
+
 Run the client and server concurrently across two terminal windows:
 
-Terminal 1 (Backend):
+**Terminal 1 (Backend):**
+
+```bash
 cd backend
 node server.js
 
-Terminal 2 (Frontend):
+```
+
+**Terminal 2 (Frontend):**
+
+```bash
 cd frontend
 npm run dev
 
-🏗️ Deployment Architecture
-Backend: Hosted on Render.
+```
 
-Frontend: Hosted on Vercel.
+---
 
-Database: Hosted on MongoDB Atlas.
+## 🏗️ Deployment Architecture
 
-Designed and engineered by Vedant Singh.
+* **Backend:** Hosted on [Render](https://render.com/).
+* **Frontend:** Hosted on [Vercel](https://vercel.com/).
+* **Database:** Hosted on MongoDB Atlas.
+
+---
+
+*Designed and engineered by Vedant Singh.*
+
+```
+
+```
