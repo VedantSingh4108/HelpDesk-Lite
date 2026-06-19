@@ -115,6 +115,3 @@ npm run dev
 
 *Designed and engineered by Vedant Singh.*
 
-```
-
-```
