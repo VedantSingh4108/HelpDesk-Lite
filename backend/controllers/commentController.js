@@ -1,6 +1,7 @@
 const Comment = require('../models/Comment');
 const Ticket = require('../models/Ticket');
 const sendEmail = require('../utils/sendEmail');
+
 // @desc    Get all comments for a specific ticket
 // @route   GET /api/comments/:ticketId
 // @access  Private
@@ -24,9 +25,6 @@ const getComments = async (req, res) => {
 // @desc    Add a new comment to a ticket
 // @route   POST /api/comments/:ticketId
 // @access  Private
-// @desc    Add a new comment to a ticket
-// @route   POST /api/comments/:ticketId
-// @access  Private
 const addComment = async (req, res) => {
     try {
         // We added .populate('user') here so we can grab the End-User's email!
@@ -43,7 +41,7 @@ const addComment = async (req, res) => {
         // 2. Fetch it back for the frontend
         const populatedComment = await Comment.findById(comment._id).populate('user', 'name role email');
 
-        // --- NEW: EMAIL NOTIFICATION LOGIC ---
+        // --- EMAIL NOTIFICATION LOGIC (fire-and-forget, does not block the response) ---
         // If the person who just commented is NOT the end-user, send the end-user an email!
         if (req.user.role !== 'end-user') {
             const ticketUrl = `http://help-desk-lite-neon.vercel.app/my-tickets`;
@@ -55,16 +53,13 @@ const addComment = async (req, res) => {
                 ${ticketUrl}
             `;
 
-            try {
-                await sendEmail({
-                    email: ticket.user.email,
-                    subject: `New Reply on Ticket: ${ticket.title}`,
-                    message
-                });
-            } catch (emailErr) {
+            sendEmail({
+                email: ticket.user.email,
+                subject: `New Reply on Ticket: ${ticket.title}`,
+                message
+            }).catch(emailErr => {
                 console.error("Non-fatal: Failed to send comment notification email", emailErr);
-                // We don't throw a 500 error here because the comment was still successfully saved to the database!
-            }
+            });
         }
         // --------------------------------------
 
